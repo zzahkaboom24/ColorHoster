@@ -96,7 +96,9 @@ pub async fn handle(
             buffer.extend_from_str(&format!("HID: {}", id));
 
             buffer.extend_from_slice(&(config.effects.len() as u16).to_le_bytes());
-            buffer.extend_from_slice(&(keyboard.effect().await as i32).to_le_bytes());
+            let current_effect = keyboard.effect().await as i32;
+            let active_mode = config.get_mode_index(current_effect).unwrap_or(0) as i32;
+            buffer.extend_from_slice(&active_mode.to_le_bytes());
 
             for (name, id, flags) in &config.effects {
                 buffer.extend_from_str(name);
@@ -194,11 +196,22 @@ pub async fn handle(
             keyboard.update_colors(colors, 0, ctx.with_brightness);
         }
         Some(Request::UpdateMode) | Some(Request::SaveMode) => {
-            let data_length = stream.read_u32_le().await?;
-            let effect = stream.read_i32_le().await? as u8;
-            keyboard.update_effect(effect);
+            let mut data_length = stream.read_u32_le().await?;
+            if data_length == 0 {
+                data_length = length;
+            }
+
+            let mode_idx = stream.read_i32_le().await? as usize;
+            let config = keyboard.config().await;
+            let effect_id = config.get_effect_id(mode_idx).unwrap_or(0) as u8;
+            keyboard.update_effect(effect_id);
 
             let name_length = stream.read_u16_le().await? as usize;
+
+            if (data_length as usize) < 10 {
+                return Err(anyhow!("Invalid data length"));
+            }
+
             let mut buffer = vec![0; data_length as usize - 10];
             stream.read_exact(&mut buffer).await?;
 

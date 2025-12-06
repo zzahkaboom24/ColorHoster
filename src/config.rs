@@ -169,6 +169,14 @@ impl Config {
             return 0;
         }
     }
+
+    pub fn get_mode_index(&self, effect_id: i32) -> Option<usize> {
+        self.effects.iter().position(|(_, id, _)| *id == effect_id)
+    }
+
+    pub fn get_effect_id(&self, mode_index: usize) -> Option<i32> {
+        self.effects.get(mode_index).map(|(_, id, _)| *id)
+    }
 }
 
 #[derive(Debug)]
