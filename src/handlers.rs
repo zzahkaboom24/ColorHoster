@@ -37,12 +37,14 @@ pub async fn handle(
         Some(Request::GetProtocolVersion) => {
             let _client_version = stream.read_u32_le().await?;
             let version = OPENRGB_PROTOCOL_VERSION.to_le_bytes();
-            stream.write_response(request, &version).await?;
+            stream.write_response(device, request, &version).await?;
             return Ok(());
         }
         Some(Request::GetControllerCount) => {
             let count: u32 = keyboards.len() as u32;
-            stream.write_response(request, &count.to_le_bytes()).await?;
+            stream
+                .write_response(device, request, &count.to_le_bytes())
+                .await?;
             return Ok(());
         }
         Some(Request::SetClientName) => {
@@ -155,7 +157,7 @@ pub async fn handle(
             let buffer_length = buffer.len() as u32;
             buffer[0..4].copy_from_slice(&buffer_length.to_le_bytes());
 
-            stream.write_response(request, &buffer).await?;
+            stream.write_response(device, request, &buffer).await?;
         }
         Some(Request::UpdateSingleLed) => {
             let led_index = stream.read_u32_le().await? as usize;
@@ -253,7 +255,7 @@ pub async fn handle(
             let buffer_length = buffer.len() as u32;
             buffer[0..4].copy_from_slice(&buffer_length.to_le_bytes());
 
-            stream.write_response(request, &buffer).await?;
+            stream.write_response(device, request, &buffer).await?;
         }
         Some(Request::ResizeZone) => {
             // Keyboards do not support resizing zones, so we just consume the request

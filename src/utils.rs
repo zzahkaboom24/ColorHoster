@@ -104,7 +104,7 @@ impl BufferExt for Vec<u8> {
 
 pub trait StreamExt {
     async fn read_rgb(&mut self) -> Result<Rgb<Srgb, f32>>;
-    async fn write_response(&mut self, kind: u32, data: &[u8]) -> Result<()>;
+    async fn write_response(&mut self, device: u32, kind: u32, data: &[u8]) -> Result<()>;
     async fn read_str(&mut self, len: usize) -> Result<String>;
 }
 
@@ -115,9 +115,9 @@ impl StreamExt for TcpStream {
         Ok(Rgb::new(buf[0], buf[1], buf[2]).into_format())
     }
 
-    async fn write_response(&mut self, kind: u32, data: &[u8]) -> Result<()> {
+    async fn write_response(&mut self, device: u32, kind: u32, data: &[u8]) -> Result<()> {
         self.write_all(b"ORGB").await?;
-        self.write_u32_le(0).await?;
+        self.write_u32_le(device).await?;
         self.write_u32_le(kind).await?;
         self.write_u32_le(data.len() as u32).await?;
         self.write_all(&data).await?;

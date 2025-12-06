@@ -175,7 +175,7 @@ async fn handle_connection(mut stream: TcpStream, ctx: &mut HandlerContext) -> R
             data = stream.read_u32_le() => data?,
             _ = ctx.interrupt.cancelled() => return Ok(()),
             _ = device_notification.recv() => {
-                stream.write_response(Request::DeviceListUpdated.into(), &[]).await?;
+                stream.write_response(0, Request::DeviceListUpdated.into(), &[]).await?;
                 continue;
             }
         };
