@@ -91,7 +91,7 @@ impl Config {
     fn parse_effects(menus: Vec<MenuOption>) -> Vec<Effect> {
         let controls = Self::collect_controls(&menus);
 
-        menus
+        let mut effects: Vec<Effect> = menus
             .into_iter()
             .find_map(|m| match m {
                 MenuOption::Dropdown { content, options }
@@ -129,7 +129,18 @@ impl Config {
 
                 return (name, id, flags);
             })
-            .collect()
+            .collect();
+
+        // Lift the direct mode at index 0 to ensure compatibility with some clients
+        if let Some(index) = effects
+            .iter()
+            .position(|(_, _, flags)| flags & MODE_FLAG_HAS_PER_LED_COLOR != 0)
+        {
+            let effect = effects.remove(index);
+            effects.insert(0, effect);
+        }
+
+        effects
     }
 
     fn collect_controls(menus: &[MenuOption]) -> Vec<Control> {
