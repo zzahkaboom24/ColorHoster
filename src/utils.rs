@@ -116,11 +116,14 @@ impl StreamExt for TcpStream {
     }
 
     async fn write_response(&mut self, device: u32, kind: u32, data: &[u8]) -> Result<()> {
-        self.write_all(b"ORGB").await?;
-        self.write_u32_le(device).await?;
-        self.write_u32_le(kind).await?;
-        self.write_u32_le(data.len() as u32).await?;
-        self.write_all(&data).await?;
+        let mut response = vec![0; 16 + data.len()];
+        response[0..4].copy_from_slice(b"ORGB");
+        response[4..8].copy_from_slice(&device.to_le_bytes());
+        response[8..12].copy_from_slice(&kind.to_le_bytes());
+        response[12..16].copy_from_slice(&(data.len() as u32).to_le_bytes());
+        response[16..].copy_from_slice(data);
+
+        self.write_all(&response).await?;
         Ok(())
     }
 
