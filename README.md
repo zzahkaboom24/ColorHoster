@@ -68,7 +68,7 @@ ColorHoster should be compatible with any OpenRGB v3 protocol client, enabling R
 
 ## Service Management (`--service` option)
 
-ColorHoster can run as a background service on any OS using the `--service` option: `create`, `start`, `stop`, or `delete`. When you run `--service create` with any CLI options, those options are saved to a `colorhoster.toml` config file next to the executable and will become the default options for both service and CLI usage (unless overridden).
+ColorHoster can run as a background service on any OS using the `--service` option: `create`, `start`, `stop`, or `delete`. When you run `--service create` with any CLI options, those options are saved to a `colorhoster.toml` config file next to the executable and will become the default options for both service and CLI usage (unless overridden). To create/delete the service on most OSes you need to run command with **administrative privileges**. On MacOS you also need to make sure the binary has disk access (to read JSON configs). This is configured under security section in system settings.
 
 ## Technical Details
 
