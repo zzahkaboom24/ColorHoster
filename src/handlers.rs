@@ -22,6 +22,7 @@ pub struct HandlerContext {
     pub with_brightness: bool,
     pub profiles_dir: PathBuf,
     pub interrupt: CancellationToken,
+    pub protocol_version: u32,
 }
 
 pub async fn handle(
@@ -35,7 +36,8 @@ pub async fn handle(
 
     match Request::try_from(request).ok() {
         Some(Request::GetProtocolVersion) => {
-            let _client_version = stream.read_u32_le().await?;
+            let client_version = stream.read_u32_le().await?;
+            ctx.protocol_version = client_version.min(OPENRGB_PROTOCOL_VERSION);
             let version = OPENRGB_PROTOCOL_VERSION.to_le_bytes();
             stream.write_response(device, request, &version).await?;
             return Ok(());
@@ -68,9 +70,14 @@ pub async fn handle(
 
     match Request::try_from(request).ok() {
         Some(Request::GetControllerData) => {
-            if length > 0 {
-                stream.read_u32_le().await?;
-            }
+            let client_version = if length > 0 {
+                let version = stream.read_u32_le().await?;
+                ctx.protocol_version = version;
+                version
+            } else {
+                0
+            };
+            ctx.protocol_version = client_version.min(OPENRGB_PROTOCOL_VERSION);
 
             let config = keyboard.config().await;
             let id = format!("{:04x}:{:04x}", config.vendor_id, config.product_id);
@@ -80,7 +87,9 @@ pub async fn handle(
 
             buffer.extend_from_slice(&DEVICE_TYPE_KEYBOARD.to_le_bytes());
             buffer.extend_from_str(&config.name);
-            buffer.extend_from_str("Unknown");
+            if ctx.protocol_version >= 1 {
+                buffer.extend_from_str("Unknown");
+            }
             buffer.extend_from_str(&format!("{} via ColorHoster", &config.name));
             buffer.extend_from_str(env!("CARGO_PKG_VERSION"));
             buffer.extend_from_str(&id);
@@ -96,14 +105,18 @@ pub async fn handle(
                 buffer.extend_from_slice(&flags.to_le_bytes());
                 buffer.extend_from_slice(&config.speed.0.to_le_bytes());
                 buffer.extend_from_slice(&config.speed.1.to_le_bytes());
-                buffer.extend_from_slice(&config.brightness.0.to_le_bytes());
-                buffer.extend_from_slice(&config.brightness.1.to_le_bytes());
+                if ctx.protocol_version >= 3 {
+                    buffer.extend_from_slice(&config.brightness.0.to_le_bytes());
+                    buffer.extend_from_slice(&config.brightness.1.to_le_bytes());
+                }
 
                 let mode_colors: u32 = 1;
                 buffer.extend_from_slice(&mode_colors.to_le_bytes());
                 buffer.extend_from_slice(&mode_colors.to_le_bytes());
                 buffer.extend_from_slice(&(keyboard.speed().await as u32).to_le_bytes());
-                buffer.extend_from_slice(&(keyboard.brightness().await as u32).to_le_bytes());
+                if ctx.protocol_version >= 3 {
+                    buffer.extend_from_slice(&(keyboard.brightness().await as u32).to_le_bytes());
+                }
                 buffer.extend_from_slice(&(0u32).to_le_bytes()); // Direction is constant
 
                 let color_mode = if flags & MODE_FLAG_HAS_PER_LED_COLOR != 0 {
@@ -189,14 +202,23 @@ pub async fn handle(
             let mut buffer = vec![0; data_length as usize - 10];
             stream.read_exact(&mut buffer).await?;
 
-            let speed = buffer.read_u32_le(name_length + 32)?;
+            let (speed_offset, brightness_offset, num_colors_offset) = if ctx.protocol_version >= 3
+            {
+                (name_length + 32, Some(name_length + 36), name_length + 48)
+            } else {
+                (name_length + 24, None, name_length + 36)
+            };
+
+            let speed = buffer.read_u32_le(speed_offset)?;
             keyboard.update_speed(speed as u8);
 
-            let brightness = buffer.read_u32_le(name_length + 36)?;
-            keyboard.update_brightness(brightness as u8);
+            if let Some(offset) = brightness_offset {
+                let brightness = buffer.read_u32_le(offset)?;
+                keyboard.update_brightness(brightness as u8);
+            }
 
-            if buffer.read_u16_le(name_length + 48)? > 0 {
-                let color = buffer.read_rgb(name_length + 50)?;
+            if buffer.read_u16_le(num_colors_offset)? > 0 {
+                let color = buffer.read_rgb(num_colors_offset + 2)?;
                 keyboard.update_color(color);
             }
 

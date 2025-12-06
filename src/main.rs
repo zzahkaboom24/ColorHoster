@@ -147,6 +147,7 @@ async fn run(args: CLI, interrupt: CancellationToken) -> Result<()> {
             interrupt: interrupt.clone(),
             with_brightness: args.brightness,
             profiles_dir: profiles_dir.clone(),
+            protocol_version: 0,
         };
 
         tokio::spawn(async move {
@@ -175,7 +176,9 @@ async fn handle_connection(mut stream: TcpStream, ctx: &mut HandlerContext) -> R
             data = stream.read_u32_le() => data?,
             _ = ctx.interrupt.cancelled() => return Ok(()),
             _ = device_notification.recv() => {
-                stream.write_response(0, Request::DeviceListUpdated.into(), &[]).await?;
+                if ctx.protocol_version >= 1 {
+                    stream.write_response(0, Request::DeviceListUpdated.into(), &[]).await?;
+                }
                 continue;
             }
         };
