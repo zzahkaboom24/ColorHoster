@@ -1,3 +1,8 @@
+## 0.6.3
+
+- Improved simultaneous multi-keyboard support
+- Updated dependencies
+
 ## 0.6.1
 
 - Added support for implicit option indexing in VIA json configs. Thanks, @gzowski
