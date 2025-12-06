@@ -1,3 +1,9 @@
+## 0.7.0
+
+- (potentially breaking) Direct mode is now always reported to clients at index 0 (this does not affect your JSON configs)
+- Backwards compatibility for clients using lower OpenRGB protocol versions
+- TCP response buffering to avoid data races on some client readers
+
 ## 0.6.3
 
 - Improved simultaneous multi-keyboard support
