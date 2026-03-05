@@ -18,6 +18,7 @@ type Effect = (String, i32, u32);
 #[derive(Debug, Clone)]
 pub struct Config {
     pub name: String,
+    pub vendor: String,
     pub vendor_id: u16,
     pub product_id: u16,
     pub leds: Vec<(u8, Position)>,
@@ -31,6 +32,7 @@ impl Config {
     pub fn from_str(json: &str) -> Result<Self> {
         let KeyboardJson {
             name,
+            vendor,
             vendor_id,
             product_id,
             matrix,
@@ -42,6 +44,7 @@ impl Config {
 
         Ok(Self {
             name,
+            vendor: vendor.unwrap_or_else(|| "Unknown".to_string()),
             vendor_id: parse_hex(&vendor_id),
             product_id: parse_hex(&product_id),
             matrix: (matrix.cols, matrix.rows),
@@ -253,6 +256,8 @@ fn extract_led(key: &String) -> Option<(u8, Position)> {
 #[derive(Debug, Deserialize)]
 struct KeyboardJson {
     name: String,
+    #[serde(default)]
+    vendor: Option<String>,
     #[serde(rename = "vendorId")]
     vendor_id: String,
     #[serde(rename = "productId")]
