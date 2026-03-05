@@ -37,7 +37,7 @@ impl Keyboards {
             if is_compatible(&device)
                 && let Some(config) = configs.remove(&(device.vendor_id, device.product_id))
             {
-                debug!("Keyboard {} connected!", config.name.bold());
+                debug!("Keyboard {} {} connected!", config.vendor.bold(), config.name.bold());
                 match Keyboard::from_config(config, device).await {
                     Err(error) => warn!("Failed to initialize keyboard: {error}"),
                     Ok(keyboard) => {
@@ -75,7 +75,7 @@ impl Keyboards {
                             });
 
                             if let (Some(config), Some(device)) = (config, device) {
-                                debug!("Keyboard {} connected!", config.name.bold());
+                                debug!("Keyboard {} {} connected!", config.vendor.bold(), config.name.bold());
                                 match Keyboard::from_config(config, device).await {
                                     Err(error) => warn!("Failed to initialize keyboard: {error}"),
                                     Ok(keyboard) => {
@@ -89,7 +89,7 @@ impl Keyboards {
                         DeviceEvent::Disconnected(id) => {
                             if let Some(device) = keyboards.lock().await.shift_remove(&id) {
                                 let config = device.into_config().await;
-                                debug!("Keyboard {} disconnected!", config.name.bold());
+                                debug!("Keyboard {} {} disconnected!", config.vendor.bold(), config.name.bold());
 
                                 configs
                                     .lock()
