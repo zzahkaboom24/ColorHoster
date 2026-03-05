@@ -44,7 +44,7 @@ impl Config {
 
         Ok(Self {
             name,
-            vendor: vendor.unwrap_or_else(|| "Unknown".to_string()),
+            vendor: vendor.filter(|v| !v.trim().is_empty()).unwrap_or_else(|| "Unknown".to_string()),
             vendor_id: parse_hex(&vendor_id),
             product_id: parse_hex(&product_id),
             matrix: (matrix.cols, matrix.rows),
