@@ -213,6 +213,12 @@ fn parse_vendor_filename(stem: &str) -> Option<String> {
 
     let vendor_part: String = chars[..split_pos].iter().collect();
 
+    let vendor_part = if let Some((_, right)) = vendor_part.rsplit_once(' ') {
+        right.to_string()
+    } else {
+        vendor_part
+    };
+
     if vendor_part.is_empty() {
         return None;
     }
