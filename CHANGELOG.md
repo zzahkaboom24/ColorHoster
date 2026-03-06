@@ -1,3 +1,34 @@
+## 0.7.1
+
+- Added support for the vendor flag on OpenRGB clients.
+
+  To make use of this, add the following to the beginning of your JSON config (examples):
+
+  SteelSeries.apex5_ansi.json -> SteelSeries
+  
+  Cooler-Master.ck352_ansi.json -> Cooler Master
+  
+  Cooler.Master.ck352_ansi.json -> Cooler
+  
+  Cooler+Master.ck352_ansi.json -> Cooler+Master
+  
+  Cooler+-Master.ck352_ansi.json -> Cooler-Master
+  
+  Cooler+.Master.ck352_ansi.json -> Cooler.Master
+  
+  
+  ### Filename legend:
+
+  `-` = space
+  
+  `.` = vendor|name separator
+  
+  `+-` = literal - (escape sequence for actual dash if needed)
+  
+  `+.` = literal . (escape sequence for actual dot if needed)
+  
+  
+
 ## 0.7.0
 
 - (potentially breaking) Direct mode is now always reported to clients at index 0 (this does not affect your JSON configs)
