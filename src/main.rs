@@ -209,6 +209,10 @@ fn parse_vendor_filename(stem: &str) -> Option<String> {
         }
     }
 
+    if split_pos.is_none() {
+        split_pos = chars.iter().position(|&c| c == '.');
+    }
+
     let split_pos = split_pos?;
 
     let vendor_part: String = chars[..split_pos].iter().collect();
