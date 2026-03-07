@@ -2,32 +2,7 @@
 
 - Added support for the vendor flag on OpenRGB clients.
 
-  To make use of this, add the following to the beginning of your JSON config (examples):
-
-  SteelSeries.apex5_ansi.json -> SteelSeries
-  
-  Cooler-Master.ck352_ansi.json -> Cooler Master
-  
-  Cooler.Master.ck352_ansi.json -> Cooler
-  
-  Cooler+Master.ck352_ansi.json -> Cooler+Master
-  
-  Cooler+-Master.ck352_ansi.json -> Cooler-Master
-  
-  Cooler+.Master.ck352_ansi.json -> Cooler.Master
-  
-  
-  ### Filename legend:
-
-  `-` = space
-  
-  `.` = vendor|name separator
-  
-  `+-` = literal - (escape sequence for actual dash if needed)
-  
-  `+.` = literal . (escape sequence for actual dot if needed)
-  
-  
+  The vendor name is automatically read from the keyboard's QMK firmware. The `vendorId` and `productId` in your ColorHoster JSON are used to identify the correct device. The manufacturer name compiled into the firmware is then reported to OpenRGB clients.
 
 ## 0.7.0
 
