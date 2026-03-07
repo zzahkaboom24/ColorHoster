@@ -76,9 +76,7 @@ impl Keyboards {
         let mut stream = backend.enumerate().await?;
 
         while let Some(device) = stream.next().await {
-            if is_compatible(&device)
-                && let Some(mut config) = configs.remove(&(device.vendor_id, device.product_id))
-            {
+            if is_compatible(&device) && let Some(mut config) = configs.remove(&(device.vendor_id, device.product_id)) {
                 if let Some(manufacturer) = read_manufacturer(config.vendor_id, config.product_id) {
                     config.vendor = manufacturer;
                 }
