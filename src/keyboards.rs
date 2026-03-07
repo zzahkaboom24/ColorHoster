@@ -80,7 +80,7 @@ impl Keyboards {
                 if let Some(manufacturer) = read_manufacturer(config.vendor_id, config.product_id) {
                     config.vendor = manufacturer;
                 }
-                debug!("Keyboard {} {} connected!", config.vendor.bold().cyan(), config.name.bold());
+                debug!("Keyboard {} {} connected!", config.vendor.bold().cyan(), config.name.bold().blue());
                 match Keyboard::from_config(config, device).await {
                     Err(error) => warn!("Failed to initialize keyboard: {error}"),
                     Ok(keyboard) => {
@@ -121,7 +121,7 @@ impl Keyboards {
                                 if let Some(manufacturer) = read_manufacturer(config.vendor_id, config.product_id) {
                                     config.vendor = manufacturer;
                                 }
-                                debug!("Keyboard {} {} connected!", config.vendor.bold().cyan(), config.name.bold());
+                                debug!("Keyboard {} {} connected!", config.vendor.bold().cyan(), config.name.bold().blue());
                                 match Keyboard::from_config(config, device).await {
                                     Err(error) => warn!("Failed to initialize keyboard: {error}"),
                                     Ok(keyboard) => {
@@ -135,7 +135,7 @@ impl Keyboards {
                         DeviceEvent::Disconnected(id) => {
                             if let Some(device) = keyboards.lock().await.shift_remove(&id) {
                                 let config = device.into_config().await;
-                                debug!("Keyboard {} {} disconnected!", config.vendor.bold().cyan(), config.name.bold());
+                                debug!("Keyboard {} {} disconnected!", config.vendor.bold().cyan(), config.name.bold().blue());
 
                                 configs
                                     .lock()
