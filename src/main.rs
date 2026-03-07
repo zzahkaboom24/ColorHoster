@@ -193,64 +193,6 @@ async fn handle_connection(mut stream: TcpStream, ctx: &mut HandlerContext) -> R
     }
 }
 
-fn parse_vendor_filename(stem: &str) -> Option<String> {
-    let chars: Vec<char> = stem.chars().collect();
-    let mut split_pos = None;
-    let mut i = 0;
-
-    while i < chars.len() {
-        if chars[i] == '+' && i + 1 < chars.len() && chars[i + 1] == '.' {
-            i += 2;
-        } else if chars[i] == '.' {
-            split_pos = Some(i);
-            break;
-        } else {
-            i += 1;
-        }
-    }
-
-    if split_pos.is_none() {
-        split_pos = chars.iter().position(|&c| c == '.');
-    }
-
-    let split_pos = split_pos?;
-
-    let vendor_part: String = chars[..split_pos].iter().collect();
-
-    let vendor_part = if let Some((_, right)) = vendor_part.rsplit_once(' ') {
-        right.to_string()
-    } else {
-        vendor_part
-    };
-
-    if vendor_part.is_empty() {
-        return None;
-    }
-
-    let chars: Vec<char> = vendor_part.chars().collect();
-    let mut result = String::new();
-    let mut i = 0;
-
-    while i < chars.len() {
-        if chars[i] == '+' && i + 1 < chars.len() && chars[i + 1] == '-' {
-            result.push('-');
-            i += 2;
-        } else if chars[i] == '+' && i + 1 < chars.len() && chars[i + 1] == '.' {
-            result.push('.');
-            i += 2;
-        } else if chars[i] == '-' {
-            result.push(' ');
-            i += 1;
-        } else {
-            result.push(chars[i]);
-            i += 1;
-        }
-    }
-
-    let collapsed = result.split_whitespace().collect::<Vec<_>>().join(" ");
-    if collapsed.is_empty() { None } else { Some(collapsed) }
-}
-
 async fn load_keyboards(directory: Option<PathBuf>, json: Vec<PathBuf>) -> Result<Keyboards> {
     let configs = directory
         .unwrap_or(CLI::current_dir())
@@ -264,20 +206,9 @@ async fn load_keyboards(directory: Option<PathBuf>, json: Vec<PathBuf>) -> Resul
             }
         })
         .chain(json.into_iter())
-        .filter_map(|path| {
-            let stem = path.file_stem()?.to_str()?.to_string();
-            let content = fs::read_to_string(&path).ok()?;
-            Some((stem, content))
-        })
-        .unique_by(|(_, content)| content.clone())
-        .map(|(stem, content)| {
-            Config::from_str(&content).map(|mut config| {
-                if let Some(filename_vendor) = parse_vendor_filename(&stem) {
-                    config.vendor = filename_vendor;
-                }
-                ((config.vendor_id, config.product_id), config)
-            })
-        })
+        .filter_map(|x| fs::read_to_string(x).ok())
+        .unique()
+        .map(|x| Config::from_str(&x).map(|config| ((config.vendor_id, config.product_id), config)))
         .collect::<Result<HashMap<_, _>>>()?;
 
     if configs.is_empty() {
