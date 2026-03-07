@@ -4,9 +4,11 @@ use colored::Colorize;
 use futures::StreamExt;
 use indexmap::IndexMap;
 use log::{debug, warn};
+use rusb::{Context as UsbContext, UsbContext as _};
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
+    time::Duration
 };
 use tokio::sync::{
     Mutex as AsyncMutex, MutexGuard,
@@ -18,6 +20,46 @@ use crate::{
     consts::{QMK_USAGE_ID, QMK_USAGE_PAGE},
     keyboard::Keyboard,
 };
+
+fn read_manufacturer(vendor_id: u16, product_id: u16) -> Option<String> {
+    let context = UsbContext::new().ok()?;
+    let devices = context.devices().ok()?;
+
+    for device in devices.iter() {
+        let desc = match device.device_descriptor() {
+            Ok(d) => d,
+            Err(_) => continue,
+        };
+
+        if desc.vendor_id() != vendor_id || desc.product_id() != product_id {
+            continue;
+        }
+
+        let handle = match device.open() {
+            Ok(h) => h,
+            Err(_) => continue,
+        };
+
+        let timeout = Duration::from_millis(1000);
+        let languages = match handle.read_languages(timeout) {
+            Ok (l) => l,
+            Err(_) => continue,
+        };
+
+        let language = match languages.first() {
+            Some(&l) => l,
+            None => continue,
+        };
+
+        if let Ok(manufacturer) = handle.read_manufacturer_string(language, &desc, timeout) {
+            if !manufacturer.is_empty() {
+                return Some(manufacturer);
+            }
+        }
+    }
+
+    None
+}
 
 #[derive(Clone)]
 pub struct Keyboards {
@@ -35,8 +77,11 @@ impl Keyboards {
 
         while let Some(device) = stream.next().await {
             if is_compatible(&device)
-                && let Some(config) = configs.remove(&(device.vendor_id, device.product_id))
+                && let Some(mut config) = configs.remove(&(device.vendor_id, device.product_id))
             {
+                if let Some(manufacturer) = read_manufacturer(config.vendor_id, config.product_id) {
+                    config.vendor = manufacturer;
+                }
                 debug!("Keyboard {} {} connected!", config.vendor.bold(), config.name.bold());
                 match Keyboard::from_config(config, device).await {
                     Err(error) => warn!("Failed to initialize keyboard: {error}"),
@@ -74,7 +119,10 @@ impl Keyboards {
                                 configs.lock().unwrap().remove(key)
                             });
 
-                            if let (Some(config), Some(device)) = (config, device) {
+                            if let (Some(mut config), Some(device)) = (config, device) {
+                                if let Some(manufacturer) = read_manufacturer(config.vendor_id, config.product_id) {
+                                    config.vendor = manufacturer;
+                                }
                                 debug!("Keyboard {} {} connected!", config.vendor.bold(), config.name.bold());
                                 match Keyboard::from_config(config, device).await {
                                     Err(error) => warn!("Failed to initialize keyboard: {error}"),
